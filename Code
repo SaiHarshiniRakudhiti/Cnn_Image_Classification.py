@@ -1,0 +1,97 @@
+# cnn_image_classification.py
+
+# 1. Import libraries
+import tensorflow as tf
+from tensorflow.keras import layers, models
+import matplotlib.pyplot as plt
+import numpy as np
+
+# 2. Load and preprocess data
+(x_train, y_train), (x_test, y_test) = tf.keras.datasets.cifar10.load_data()
+
+x_train = x_train.astype("float32") / 255.0
+x_test = x_test.astype("float32") / 255.0
+
+class_names = [
+    "airplane", "automobile", "bird", "cat", "deer",
+    "dog", "frog", "horse", "ship", "truck"
+]
+
+print("Training data shape:", x_train.shape)
+print("Testing data shape:", x_test.shape)
+
+# 3. Build the CNN model
+model = models.Sequential([
+    layers.Input(shape=(32, 32, 3)),
+
+    layers.Conv2D(32, (3, 3), activation="relu", padding="same"),
+    layers.MaxPooling2D((2, 2)),
+
+    layers.Conv2D(64, (3, 3), activation="relu", padding="same"),
+    layers.MaxPooling2D((2, 2)),
+
+    layers.Conv2D(64, (3, 3), activation="relu", padding="same"),
+
+    layers.Flatten(),
+    layers.Dense(64, activation="relu"),
+    layers.Dense(10, activation="softmax")
+])
+
+# 4. Compile the model
+model.compile(
+    optimizer="adam",
+    loss="sparse_categorical_crossentropy",
+    metrics=["accuracy"]
+)
+
+# Show model summary
+print("\n--- Model Summary ---")
+model.summary()
+
+# 5. Train the model
+history = model.fit(
+    x_train,
+    y_train,
+    epochs=10,
+    batch_size=64,
+    validation_data=(x_test, y_test)
+)
+
+# 6. Evaluate the model
+test_loss, test_acc = model.evaluate(x_test, y_test, verbose=2)
+print(f"\nTest Loss: {test_loss:.4f}")
+print(f"Test Accuracy: {test_acc:.4f}")
+
+# 7. Plot training history
+plt.figure(figsize=(8, 5))
+plt.plot(history.history["accuracy"], label="Train Accuracy")
+plt.plot(history.history["val_accuracy"], label="Validation Accuracy")
+plt.xlabel("Epoch")
+plt.ylabel("Accuracy")
+plt.title("Training vs Validation Accuracy")
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+# 8. Make predictions
+predictions = model.predict(x_test)
+
+# 9. Display first 5 test images with predictions
+plt.figure(figsize=(12, 4))
+for i in range(5):
+    plt.subplot(1, 5, i + 1)
+    plt.imshow(x_test[i])
+    plt.xticks([])
+    plt.yticks([])
+    plt.grid(False)
+
+    predicted_label = np.argmax(predictions[i])
+    true_label = y_test[i][0]
+
+    label_text = f"Pred: {class_names[predicted_label]}\nTrue: {class_names[true_label]}"
+    color = "blue" if predicted_label == true_label else "red"
+
+    plt.xlabel(label_text, color=color)
+
+plt.tight_layout()
+plt.show()
